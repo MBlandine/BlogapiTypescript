@@ -10,6 +10,15 @@ export const createPost = async (req: AuthenticatedRequest, res: Response): Prom
   const { title, body } = req.body;
   const userId = req.userId;
 
+  // Validation please
+  if (!title || !body) {
+    res.status(400).json({error: 'Title and body are required'});
+    return;
+  }
+
+  //Default UserID equal to 1 and I'll remove it when auth is implemented
+  const authorId = userId || 1; 
+
   try {
     const result = await pool.query(
       'INSERT INTO posts (title, body, author) VALUES ($1, $2, $3) RETURNING *',
@@ -21,6 +30,24 @@ export const createPost = async (req: AuthenticatedRequest, res: Response): Prom
     res.status(500).json({ error: 'Failed to create post' });
   }
 };
+
+
+// export const createPost = async (req: Request, res: Response): Promise<void> => {
+//   const { title, body} = req.body;
+
+//   try{
+//     const result = await pool.query(
+//       'INSERT INTO posts (title, body) VALUES ($1,$2) RETURNING *',
+//       [title, body]
+//     );
+//     res.status(201).json(result.rows[0]);
+//   } catch (err) {
+//     console.error('Error creating post:', err);
+//     res.status(500).json({ error: 'Failed to Create post'});
+
+//   }
+// };
+
 
 
 export const getAllPosts = async (_req: Request, res: Response): Promise<void> => {
@@ -82,7 +109,7 @@ export const updatePost = async (req: AuthenticatedRequest, res: Response): Prom
 export const deletePost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { id } = req.params;
   const userId = req.userId;
-// 
+
   if (!userId) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
@@ -95,14 +122,15 @@ export const deletePost = async (req: AuthenticatedRequest, res: Response): Prom
       res.status(404).json({ error: 'Post not found' });
       return;
     }
-    if (post.author !== userId) {
-      res.status(403).json({ error: 'Not authorized' });
-      return;
-    }
+    // if (post.author !== userId) {
+    //   res.status(403).json({ error: 'Not authorized' });
+    //   return;
+    // }
 
     await pool.query('DELETE FROM posts WHERE id = $1', [id]);
-    res.json({ message: 'Post deleted' });
-  } catch {
+    res.status(200).json({ message: 'Post deleted successfully' }); // Add status code
+  } catch (error) {
+    console.error('Delete error:', error); // Add error logging
     res.status(500).json({ error: 'Failed to delete post' });
   }
 };
